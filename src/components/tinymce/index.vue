@@ -7,7 +7,14 @@
   export default {
     name: 'TinyMce',
     props: {
-      msg: String
+        modelValue: { // 接收v-model传递的数据
+            type: [String, Number],
+            default: ''
+        }
+    },
+    model: {
+        prop: 'modelValue',
+        event: 'update:modelValue'
     },
     data() {
         return{
@@ -36,6 +43,8 @@
         },
         //  chushhua
         initTinymce() {
+            let _this = this
+            _this
             if(window.tinymce.init){
                 window.tinymce.init({
                     selector:'#tinymceEditor',
@@ -60,12 +69,17 @@
                     },
                     editimage_cors_hosts:'' , //  跨域地址
                     setup: function (editor) {
+                        editor.on('input', function() {
+                            _this.$emit('update:modelValue', editor.getBody().innerHTML)
+                        });
                         editor.on('click', function() {
                             
                         });
                         editor.on('init', function(){
+
                         });
                         editor.on('EditorContentLoaded', function () {
+
                         });
                     }
                 })

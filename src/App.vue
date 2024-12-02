@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-     <tinymce></tinymce>
+     <tinymce v-model="content"></tinymce>
   </div>
 </template>
 <script>
@@ -9,6 +9,11 @@ export default {
   name: 'App',
   components: {
     tinymce
+  },
+  data(){
+    return {
+      content:'<p>啦啦啦</p>'
+    }
   }
 }
 </script>
