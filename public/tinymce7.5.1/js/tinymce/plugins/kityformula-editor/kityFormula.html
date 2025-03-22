@@ -53,16 +53,16 @@
     颜色： <input class="color" type="color" > 
     <label for="sizeSelect">字号大小:</label>
     <select id="sizeSelect">
-        <option value="12">12px</option>
-        <option value="14">14px</option>
-        <option value="16">16px</option>
-        <option value="18">18px</option>
-        <option value="20">20px</option>
-        <option value="30">30px</option>
-        <option value="40">40px</option>
-        <option value="50">50px</option>
-        <option value="60">60px</option>
-        <option value="70">70px</option>
+        <option value="12px">12px</option>
+        <option value="14px">14px</option>
+        <option value="16px">16px</option>
+        <option value="18px">18px</option>
+        <option value="20px">20px</option>
+        <option value="30px">30px</option>
+        <option value="40px">40px</option>
+        <option value="50px">50px</option>
+        <option value="60px">60px</option>
+        <option value="70px">70px</option>
     </select>
     <div id="kfEditorContainer" class="kf-editor">
         <div id="tips" class="tips">
@@ -78,53 +78,93 @@
 <!-- 引入组件库 -->
 <script src="https://unpkg.com/element-ui/lib/index.js"></script>
 <script>
+// 字体
+var font
+// 颜色
 var color
-document.querySelector('.color').addEventListener("change",function(e){
-   let canvas = document.querySelector('.kf-editor-canvas-container')
-   console.log(canvas)
-   console.log('canvas')
-    color = e.target.value;
+// 字号大小
+var size
+var i = 0
+// 处理属性
+function getDomsetAttribute() {
+    let canvas = document.querySelector('.kf-editor-canvas-container')
     if(canvas.querySelectorAll('text')){
         for (const element of canvas.querySelectorAll('text')) {
-             element.setAttribute('fill',color)
+            if(color){
+                element.setAttribute('fill',color)
+            } 
+            if(size){
+                element.setAttribute('font-size', size)  
+            }
+            if(font){
+                element.setAttribute('font-family', font)
+            }
         }
     }
-   console.log(canvas.querySelectorAll('text'))
-   console.log('canvas')
+}
+let domaddevent = function(){
+    document.querySelectorAll('.kf-editor-ui-area-item').forEach((item) => {
+        item.addEventListener('click', function(e){
+            getDomsetAttribute()
+        })
+    })
+}
+//实例化编辑器
+jQuery( function ($) {
+    if ( document.body.addEventListener ) {
+        $( "#tips").html('<div id="loading"><img src="kityformula/loading.gif" alt="loading" /><p>正在加载，请耐心等待...</p></div>' );
+        var factory = kf.EditorFactory.create( $( "#kfEditorContainer" )[ 0 ], {
+            render: {
+                fontsize: 24
+            },
+            resource: {
+                path: "./kityformula/resource/"
+            }
+        });
+        factory.ready(function( KFEditor ) {
+            $( "#tips").remove();
+            //处理地址栏的参数并加载到编辑器中
+            var lslatex=getQueryVariable("lslatex")
+            var attributes=getQueryVariable("attributes")
+            // console.log(decodeURIComponent(attributes))
+            if(lslatex){
+                let attributesArr = decodeURIComponent(attributes).split(',')
+                for (const element of attributesArr) {
+                    if(element){
+                        let arr = element.split(':')
+                        window[arr[0]] = arr[1]
+                    }
+                }
+                this.execCommand( "render",decodeURIComponent(lslatex) );
+                document.querySelector('.color').value = color
+                document.getElementById('sizeSelect').value = size
+                document.getElementById('fontSelect').value = font
+                getDomsetAttribute()
+                domaddevent()
+            } else {
+                this.execCommand( "render","\\placeholder" );
+                domaddevent()
+            };
+            this.execCommand( "focus" );
+            window.kfe = this;
+        });
+    } else {
+        $( "#tips").css( "color", "black" );
+        $( "#tips").css( "padding", "10px" );
+    }
+} );
+document.querySelector('.color').addEventListener("change",function(e){
+    color = e.target.value;
+    getDomsetAttribute()
 })
-var size
-// 字号大小
 document.getElementById('sizeSelect').addEventListener('change',function(e){
-   let canvas = document.querySelector('.kf-editor-canvas-container')
-   size = e.target.value
-    if (canvas.querySelectorAll('text')) {
-        for (const element of canvas.querySelectorAll('text')) {
-            element.setAttribute('font-size', size)  
-        }
-    }
-   console.log('size')
-   console.log(size)
-   console.log('size')
-})  
-var font
-// 字体
-document.getElementById('fontSelect').addEventListener('change',function(e){
-    let canvas = document.querySelector('.kf-editor-canvas-container')
-    font = e.target.value
-    console.log('text')
-    console.log(canvas.querySelectorAll('text'))
-    console.log('text')
-    if (canvas.querySelectorAll('text')) {
-        for (const element of canvas.querySelectorAll('text')) {
-            element.setAttribute('font-family', font)
-        }
-    }
-    // family="KF AMS MAIN"
-    // console.log('font')
-    // console.log(font)
-    // console.log('font')
+    size = e.target.value
+    getDomsetAttribute()
 })
-
+document.getElementById('fontSelect').addEventListener('change',function(e){
+    font = e.target.value
+    getDomsetAttribute()
+})
 //获取url地址栏传参
 function getQueryVariable(variable){
     var query = window.location.search.substring(1);
@@ -142,42 +182,14 @@ window.addEventListener('message', function (event) {
         var latex = kfe.execCommand('get.source');
         window.parent.postMessage({
             mceAction: 'insertContent',
-            content: "<img src=\""+data.img+"\" data-latex=\""+latex+"\">"
+            content: `<img data-attributes="${size?'size:' + size:''},${color?'color:' + color:''},${font?'font:' + font:''}" src="${data.img}" data-latex="${latex}">`
         }, '*');
         window.parent.postMessage({
             mceAction: 'close'
         }, '*');
-    });
+  });
 });
-//实例化编辑器
-jQuery( function ($) {
-    if ( document.body.addEventListener ) {
-        $( "#tips").html('<div id="loading"><img src="kityformula/loading.gif" alt="loading" /><p>正在加载，请耐心等待...</p></div>' );
-        var factory = kf.EditorFactory.create( $( "#kfEditorContainer" )[ 0 ], {
-            render: {
-                fontsize: 24
-            },
-            resource: {
-                path: "./kityformula/resource/"
-            }
-        });
-        factory.ready( function ( KFEditor ) {
-            $( "#tips").remove();
-            //处理地址栏的参数并加载到编辑器中
-            var c=getQueryVariable("c")
-            if(c){
-                this.execCommand( "render",decodeURIComponent(c) );
-            }else{
-                this.execCommand( "render","\\placeholder" );
-            };
-            this.execCommand( "focus" );
-            window.kfe = this;
-        } );
-    } else {
-        $( "#tips").css( "color", "black" );
-        $( "#tips").css( "padding", "10px" );
-    }
-} );
+
 </script>
 </body>
 </html>

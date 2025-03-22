@@ -4,7 +4,7 @@
       <div class="header">{{content}}</div>
       <contents class="leftSide"></contents>
       <div class="body">
-        <tinymce :newTinymceId="newTinymceId" :newTinymceClass="newTinymceClass"  v-model="content" :config="config" :src_path="src_path" :setTimeout_loading_time='1000' @tinymce-paste='paste' ></tinymce>
+        <tinymce :newTinymceId="newTinymceId" :newTinymceClass="newTinymceClass"  v-model="content" :config="config" :src_path="src_path" :setTimeout_loading_time='1000' @tinymce-paste='paste' @update:modelValue="handleModelUpdate"></tinymce>
       </div>
       <option-elemet class="rightSide"></option-elemet> 
       <div class="footer">5</div>
@@ -15,7 +15,7 @@
 import tinymce from './components/tinymce/index.vue'
 import contents from './components/contents.vue' 
 import optionElemet from './components/optionElemet.vue' 
-import tinymceApi from './components/tinymce/tinymceApi.js'
+import { tinymceApi , tinymceTree } from './components/tinymce/tinymceApi.js'
 export default {
   name: 'App',
   components: {
@@ -28,14 +28,24 @@ export default {
       newTinymceId: 'tinymceEditor',   // tinymce id
       newTinymceClass: 'tinymce', // tinymce样式
       config: {}, // tinymce配置
-      content:'<p>22222</p>', // 初始化内容
+      content:'<h1>22222</h1>', // 初始化内容
       src_path: window.location.origin + '/tinymce7.5.1/js/tinymce/tinymce.min.js',  // tinymce路径
-      api: new tinymceApi('tinymceEditor')
+      tinymceEditor: new tinymceApi('tinymceEditor')  // tinymce实例
     }
   },
    methods: {
+    init() {
+      let element = document.createElement('div')
+      element.innerHTML = this.content
+      console.log(element)
+      new tinymceTree(element)
+    },
+    handleModelUpdate(value){
+      console.log(this.content)
+      console.log(value)
+    },
     paste() {
-      this.content = this.api.tinymce().getContent()
+      this.content = this.tinymceEditor.tinymce().getContent()
     },
     newTinymce() {
         // 只对tinymceEditor id的元素进行初始化 
@@ -64,13 +74,7 @@ export default {
             custom_ui_selector: 'body',
             advlist_bullet_styles: 'square',
             init_instance_callback: (editor) =>{
-                // console.log(editor.getBody().querySelectorAll('h1, h2, h3, h4, h5, h6'))
-                // console.log(Object.keys(editor.getBody().querySelectorAll('h1, h2, h3, h4, h5, h6')).length)
-                if(editor.getBody().querySelectorAll('h1, h2, h3, h4, h5, h6')) {
-                      for (const element of editor.getBody().querySelectorAll('h1, h2, h3, h4, h5, h6')) {
-                        console.log(element)
-                      }
-                }
+              editor
             },
             editimage_cors_hosts:'', //  跨域地址
             paste_preprocess: function(plugin, args) {
@@ -85,41 +89,157 @@ export default {
                 content
                 let api =  new tinymceApi('tinymceEditor')
                 api
-                // console.log('api.tinymce')
-                // console.log(api.tinymce().getContent())
-                // console.log('api.tinymce')
             },
             setup: (editor) =>{
-                editor.on('input', function() {});
+                editor.on('input', function() {
+                });
+                editor.on('dblclick', function(e) {
+                  e
+                  // 公式插件配合图片实现双击编辑
+                  //let baseURL = e.currentTarget.baseURI+'plugins/kityformula-editor/kityFormula.html';
+                  let baseURL ='http://localhost:8080/tinymce7.5.1/js/tinymce/plugins/kityformula-editor/kityFormula.html'
+                  // 获取当前标签元素中的data-latex属性并判断是否存在
+                  let lslatex = editor.selectionGetNode.getAttribute('data-latex')
+                  let attributes = editor.selectionGetNode.getAttribute('data-attributes')
+
+                  if (lslatex) {
+                    // 证明当前选择的元素时候是公式图片元素
+                   var dcodeLslatex = encodeURIComponent(lslatex)
+                   var dcodeAttributes = encodeURIComponent(attributes)
+                  //  +"?attributes="+
+                   attributes
+                  //  window.open(param)
+                    editor.windowManager.openUrl({
+                        title: '插入公式',
+                        size: 'large',
+                        width: 785,
+                        height: 475,
+                        url:baseURL+"?lslatex="+dcodeLslatex+"&attributes="+dcodeAttributes,
+                        buttons: [
+                            {
+                                type: 'cancel',
+                                text: 'Close'
+                            },
+                            {
+                                type: 'custom',
+                                text: 'Save',
+                                name: 'save',
+                                primary: true
+                            },
+                        ],
+                        onAction: function (api, details) {
+                            switch (details.name) {
+                                case 'save':
+                                    api.sendMessage("save");
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    });
+                  }
+                  // path
+                  // let path2=/data-latex="(.*?)"/g;
+                  // if(sel.search(path)==0){
+                  //     // sel.replace(path2,function($0,$1){
+                  //     //     console.log($1)
+                  //     //     // var param=encodeURIComponent($1);
+                  //     //     // openDialog(param);
+                  //     //     return $0;
+                  //     // });
+                  // };
+                  console.log(baseURL)
+                });
                 editor.on('click', function(e) {
                   e
-                    // editor.selectionContentElements = editor.selection.getSelectedBlocks();
-                    // editor.selectionContentText = editor.selection.getContent({format: 'text'});
+                  //  let  = editor.selection.getNode().querySelector('[data-latex]');
+                  //  console.log(editor.selection.getNode())
+                  // console.log('editor.windowManager')
+                  // console.log(editor.windowManager)
+                  // console.log('editor.windowManager')
+
+                  // var sel=editor.selection.getContent();
+                  // var path=/\<img(.*?)src="data:image\/png;base64,[A-Za-z0-9+/=]*"(.*?)data-latex="(.*?)" \/>/g;
+                  // var path2=/data-latex="(.*?)"/g;
+
+                  // if(sel.search(path)==0){
+                  //     sel.replace(path2,function($0,$1){
+                  //         var param=encodeURIComponent($1);
+                  //         openDialog(param);
+                  //         return $0;
+                  //     });
+                  // };
+
+                  // var openDialog = function(param) {
+                  //     return editor.windowManager.openUrl({
+                  //         title: '插入公式',
+                  //         size: 'large',
+                  //         width: 785,
+                  //         height: 475,
+                  //         url:param?baseURL+"?c="+param:baseURL,
+                  //         buttons: [
+                  //             {
+                  //                 type: 'cancel',
+                  //                 text: 'Close'
+                  //             },
+                  //             {
+                  //                 type: 'custom',
+                  //                 text: 'Save',
+                  //                 name: 'save',
+                  //                 primary: true
+                  //             },
+                  //         ],
+                  //         onAction: function (api, details) {
+                  //             switch (details.name) {
+                  //                 case 'save':
+                  //                     api.sendMessage("save");
+                  //                     break;
+                  //                 default:
+                  //                     break;
+                  //             };
+                  //         }
+                  //     });
+                  // };
+                  // console.log(e)
+                  // console.log('api')
+                  // console.log(_this.tinymceEditor.tinymce())
+                  // console.log('api')
+                  // // _this.api.tinymce()
+                  // editor.selectionContentElements = 1
+                  // console.log(_this.tinymceEditor.tinymce())
+                    // 保证在初始化多个编辑器中时官方的api不会串 只获取当前编辑器所点击获取的文本元素。
+                    editor.selectionContentElements = editor.selection.getSelectedBlocks();
+                    editor.selectionContentText = editor.selection.getContent({format: 'text'});
+                    editor.selectionGetContent = editor.selection.getContent();
+                    editor.selectionGetNode = editor.selection.getNode()
                 });
                 editor.on('init', function(){
                     editor.setContent(_this.content)
+                    editor.selectionContentElements = ''
+                    editor.selectionContentText = ''
+                    editor.selectionGetContent = ''
                 });
                 editor.on('EditorContentLoaded', function () {
 
                 });
                 editor.on('ExecCommand', function(e) {
-                    _this.content = _this.api.tinymce().getContent()
+                    _this.content = _this.tinymceEditor.tinymce().getContent()
                     if(e.command === 'mceToggleFormat'){
                         console.log('e.value')
                         console.log(e.value)
                         console.log('e.value')
                     }
-                }),
-                editor.on('dblclick', function () {
-                    alert('dblclick')
                 })
+                // editor.on('dblclick', function () {
+                //     alert('dblclick')
+                // })
             }
         }
     }
    },
    mounted(){
      this.newTinymce()
-
+     this.init()
    }
 }
 </script>

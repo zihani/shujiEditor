@@ -74,5 +74,5 @@
   }
 </script>
 <style scoped>
+/* @import '../assets/components/tinymce/css/blockElement.css'; */
 </style>
-  
